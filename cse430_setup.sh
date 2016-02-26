@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CORE=$(nproc)
+
 #setup apt and update packages
 sudo apt-get remove git -y
 sudo apt-add-repository ppa:git-core/ppa -y
@@ -17,10 +19,10 @@ pwd
 
 # start building kernel
 make menuconfig
-make bzImage
-make modules
-make modules_install
-sudo make install
+make bzImage -j$CORE
+make modules -j$CORE
+make modules_install -j$CORE
+sudo make install -j$CORE
 sudo update-grub
 
 # all done
