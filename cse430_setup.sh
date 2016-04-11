@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# author: Daniel D'Souza
+# tested working on Ubuntu 14.04.4 LTS, x86 server netinstall
+
 CORE=$(nproc)
 
 #setup apt and update packages
