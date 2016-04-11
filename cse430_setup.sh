@@ -9,7 +9,7 @@ sudo apt-get update
 sudo apt-get upgrade -y
 
 # install basics
-sudo apt-get install git build-essential cmake libncurses5-dev -y
+sudo apt-get install git build-essential cmake libncurses5-dev bc -y
 
 # get kernel sources
 wget https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.1.15.tar.xz
