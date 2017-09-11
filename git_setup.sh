@@ -9,8 +9,10 @@ sudo apt-get update
 sudo apt-get install git -y
 
 # configure git
+USER_NAME=getent passwd $USER | cut -d ':' -f 5 | cut -d ',' -f 1
+
 git config --global user.email "daniel.dsouza5@gmail.com"
-git config --global user.name "Daniel D'Souza"
+git config --global user.name $USER_NAME
 git config --global push.default simple
 git config --global core.editor "vim"
 
