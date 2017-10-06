@@ -11,9 +11,11 @@ sudo apt install -y libprotobuf-dev \
 sudo apt install -y --no-install-recommends -y libboost-all-dev
 sudo apt install -y libatlas-base-dev
 sudo apt install -y libgflags-dev libgoogle-glog-dev liblmdb-dev
-sudo apt install -y python-pip python3-pip python-dev python3-dev python-skimage python3-skimage
+sudo apt install -y python-pip python3-pip python-dev python3-dev python-skimage python3-skimage python-protobuf
 
+# these things may be broken/out of date on older 16.04 systems...
 sudo -H pip3 install python-dateutil python-util --upgrade
+sudo -H pip3 install protobuf
 
 # Download Caffe and config
 git clone https://github.com/BVLC/caffe.git ~/Documents/caffe

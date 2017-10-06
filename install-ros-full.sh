@@ -7,7 +7,16 @@ sudo apt install -y ros-kinetic-desktop-full
 sudo rosdep init
 rosdep update
 
+# Setup environment variables
+USER_SITE=$(python -m site --user-site)
+echo -e "\n# ROS Variables" >> ~/.bashrc
 echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc
+echo 'PYTHONPATH="" #move to user site packages' >> ~/.bashrc
+mkdir -p $USER_SITE
+echo /opt/ros/kinetic/lib/python2.7/dist-packages > ${USER_SITE}/ros.pth
+
+
 source /opt/ros/kinetic/setup.bash
 
+# install better catkin
 sudo apt install -y python-rosinstall python-rosinstall-generator python-wstool build-essential python-catkin-tools
