@@ -2,7 +2,7 @@ echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" | sudo tee
 wget -4 http://packages.ros.org/ros.key -O - | sudo apt-key add -
 
 sudo apt update
-sudo apt install -y ros-kinetic-desktop-full
+sudo apt install -y ros-kinetic-desktop-full python-rosinstall python-rosinstall-generator python-wstool build-essential python-catkin-tools python3-pip
 
 sudo rosdep init
 rosdep update
@@ -11,7 +11,7 @@ source /opt/ros/kinetic/setup.bash
 
 # setup catkin
 CATKIN_WS_PATH=${HOME}/catkin_ws
-sudo apt install -y python-rosinstall python-rosinstall-generator python-wstool build-essential python-catkin-tools
+# sudo apt install -y python-rosinstall python-rosinstall-generator python-wstool build-essential python-catkin-tools
 
 mkdir -p $CATKIN_WS_PATH/src
 cd $CATKIN_WS_PATH
@@ -28,7 +28,7 @@ PYTHONPATH="" # move to user site packages
 EOM
 
 # setup rospy dependencies
-sudo apt install -y python3-pip
+# sudo apt install -y python3-pip
 PYTHON2_USER_SITE=`python2 -m site --user-site`
 PYTHON3_USER_SITE=`python3 -m site --user-site`
 ROSPY_LIB="/opt/ros/kinetic/lib/python2.7/dist-packages"
@@ -41,3 +41,30 @@ echo $ROSPY_LIB > ${PYTHON3_USER_SITE}/ros.pth
 
 ln -s ${CATKIN_WS_PATH}/catkin.pth ${PYTHON2_USER_SITE}/catkin.pth  # let python know about catkin pkgs
 ln -s ${CATKIN_WS_PATH}/catkin.pth ${PYTHON3_USER_SITE}/catkin.pth
+
+# setup systemd
+
+sudo tee /usr/local/sbin/launch_roscore.sh &>/dev/null <<EOF
+#!/bin/bash
+
+if pgrep -x "roscore" > /dev/null
+then
+    echo "roscore is already running"
+else
+    source /opt/ros/kinetic/setup.bash
+    /opt/ros/kinetic/bin/roscore
+fi
+EOF
+sudo chmod +x /usr/local/sbin/launch_roscore.sh
+
+sudo tee /etc/systemd/user/roscore.service &>/dev/null <<EOF
+[Unit]
+Description=Launch roscore
+
+[Service]
+ExecStart=/usr/local/sbin/launch_roscore.sh
+Restart=on-abort
+EOF
+
+sudo loginctl enable-linger $USER
+systemctl --user enable roscore.service
