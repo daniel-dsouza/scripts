@@ -69,6 +69,15 @@ mkdir -p ${HOME}/.local/bin
 cat >> ${HOME}/.local/bin << 'EOM'
 #!/usr/bin/env bash
 
+# check if script is being sourced
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+  echo "This script needs to be sourced, not executed in a subshell. Exiting."
+  exit
+fi
+  
+
 WORKSPACE_PATH=$(find $HOME ! -path "*.local*" -type d -name ${1}_ws)
 
 if [ -d "${WORKSPACE_PATH}" ]
@@ -76,20 +85,22 @@ then
   # links to workspace configuration
   if [ -f "${WORKSPACE_PATH}/devel/setup.bash" ]
   then
-    echo "source ${WORKSPACE_PATH}/devel/setup.bash" > ${HOME}/.bash_catkin.sh
-    source ${WORKSPACE_PATH}/devel/setup.bash
-    
+    sed -i 's|^WORKSPACE_SETUP.*|WORKSPACE_SETUP='${WORKSPACE_PATH}'/devel/setup.bash|g' ${HOME}/.bash_catkin
+    source ${HOME}/.bash_catkin
+ 
     # create python symlinks
     PYTHON_SITE=${WORKSPACE_PATH}/devel/lib/python2.7/dist-packages/
     echo $PYTHON_SITE > $(python2 -m site --user-site)/catkin.pth
     echo $PYTHON_SITE > $(python3 -m site --user-site)/catkin.pth
+
   else
     echo "Could not find ${WORKSPACE_PATH}/devel/setup.bash"
   fi
   
   echo "workspace set to ${WORKSPACE_PATH}"
+  echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH"
 else
-  echo "Could not find ${WORKSPACE_PATH}"
+  echo "Could not find any workspace matching ${1}_ws under ${HOME}"
 fi
 EOM
 
