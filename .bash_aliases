@@ -155,6 +155,28 @@ function workspace () {
     # links to workspace configuration
     if [ -f "${WORKSPACE_PATH}/setup.bash" ]
     then
+      if [ ! -f "${HOME}/.bash_catkin" ]
+      then
+        # create blank ~/.bash_catkin file
+
+        cat > ${HOME}/.bash_catkin << 'EOM'
+#!/usr/bin/env bash
+
+WORKSPACE_SETUP=/home/daniel/ros/network_attack_ws/devel/setup.bash
+export ROS_WORKSPACE=network_attack_ws/devel
+export ROS_WORKSPACE_INCLUDE_PATH=/home/daniel/ros/network_attack_ws/devel/include
+
+unset CMAKE_PREFIX_PATH
+unset ROS_PACKAGE_PATH
+
+# source /opt/ros/kinetic/setup.bash
+source $WORKSPACE_SETUP
+source $WORKSPACE_SETUP
+
+unset PYTHONPATH
+EOM
+      fi
+
       sed -i 's|^WORKSPACE_SETUP.*|WORKSPACE_SETUP='${WORKSPACE_PATH}'/setup.bash|g' ${HOME}/.bash_catkin
       sed -i 's|ROS_WORKSPACE=.*|ROS_WORKSPACE='${FOLDER}'|g' ${HOME}/.bash_catkin
       sed -i 's|ROS_WORKSPACE_INCLUDE_PATH=.*|ROS_WORKSPACE_INCLUDE_PATH='${WORKSPACE_PATH}'/include|g' ${HOME}/.bash_catkin
