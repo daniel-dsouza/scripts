@@ -34,7 +34,7 @@ function send_map () {
 alias con='rosrun swri_console swri_console &'
 alias viz='rosrun mapviz mapviz &'
 alias rcore='systemctl --user restart roscore.service'
-alias rdepi='rosdep install . --from-paths -i --os=ubuntu:bionic -y -r'
+alias rdepi='rosdep install . --from-paths -i --os=ubuntu:$(cat /etc/os-release | sed -En 's/UBUNTU_CODENAME=//p') -y -r'
 alias rmsg='rosmsg'
 alias rnode='rosnode'
 alias rsrv='rosservice'
@@ -142,7 +142,7 @@ function workspace () {
   
     # search for the root folder of the catkin workspace
     # WORKSPACE_PATH="$(find $HOME -maxdepth 2 ! -path "*.local*" ! -name "*.dbus*" -type d -name ${FOLDER})/${PACKAGES}"
-    WORKSPACE_PATH="$(find $HOME/workspaces -maxdepth 2 -type d -name .dbus -prune -o -name .gvfs -prune -o -name .local -prune -o -name ${FOLDER} -print)/${PACKAGES}"
+    WORKSPACE_PATH="$(find $HOME/ros -maxdepth 2 -type d -name .dbus -prune -o -name .gvfs -prune -o -name .local -prune -o -name ${FOLDER} -print)/${PACKAGES}"
     FOLDER="${FOLDER}/${PACKAGES}"
   
     # go to source directory
@@ -155,6 +155,28 @@ function workspace () {
     # links to workspace configuration
     if [ -f "${WORKSPACE_PATH}/setup.bash" ]
     then
+      if [ ! -f "${HOME}/.bash_catkin" ]
+      then
+        # create blank ~/.bash_catkin file
+
+        cat > ${HOME}/.bash_catkin << 'EOM'
+#!/usr/bin/env bash
+
+WORKSPACE_SETUP=/home/daniel/ros/network_attack_ws/devel/setup.bash
+export ROS_WORKSPACE=network_attack_ws/devel
+export ROS_WORKSPACE_INCLUDE_PATH=/home/daniel/ros/network_attack_ws/devel/include
+
+unset CMAKE_PREFIX_PATH
+unset ROS_PACKAGE_PATH
+
+# source /opt/ros/kinetic/setup.bash
+source $WORKSPACE_SETUP
+source $WORKSPACE_SETUP
+
+unset PYTHONPATH
+EOM
+      fi
+
       sed -i 's|^WORKSPACE_SETUP.*|WORKSPACE_SETUP='${WORKSPACE_PATH}'/setup.bash|g' ${HOME}/.bash_catkin
       sed -i 's|ROS_WORKSPACE=.*|ROS_WORKSPACE='${FOLDER}'|g' ${HOME}/.bash_catkin
       sed -i 's|ROS_WORKSPACE_INCLUDE_PATH=.*|ROS_WORKSPACE_INCLUDE_PATH='${WORKSPACE_PATH}'/include|g' ${HOME}/.bash_catkin
@@ -283,3 +305,4 @@ function bringup_vcan () {
   sudo modprobe vcan
   sudo ip link add dev vcan0 type vcan && sudo ip link set up vcan0
 }
+
