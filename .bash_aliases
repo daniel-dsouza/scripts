@@ -2,10 +2,25 @@
 
 shopt -s expand_aliases
 
+alias beep='echo -ne "\007"'
 alias clipboard='xclip -sel clip'
+alias cpufreq='watch -n.1 "grep \"^[c]pu MHz\" /proc/cpuinfo"'
 alias prune-local='git branch -vv | grep "origin/.*: gone]" | awk "{print $1}" | xargs git branch -d'
 alias get_pycharm_path='find /home/daniel/.local/share/JetBrains/Toolbox/apps -name "pycharm.sh" | sort -r | sed q'
 alias godoc_server='godoc -http=":6060"'
+alias reload_udev='sudo udevadm control --reload-rules && sudo udevadm trigger'
+alias restart_synergy='kill -9 $(pidof synergyc) && /usr/bin/synergyc --daemon --name doraemon 192.168.1.100:24800'
+
+# BEGIN kitty
+
+alias darken='kitty +kitten themes "Dark Pastel"'
+alias brighten='kitty +kitten themes "Solarized Light"'
+
+# END kitty
+
+verifysha256() {
+  echo "${1} ${2}" | sha256sum --check
+}
 
 git() {
   if [[ $@ == "pull" ]]
