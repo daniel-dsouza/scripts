@@ -5,6 +5,7 @@ shopt -s expand_aliases
 alias beep='echo -ne "\007"'
 alias clipboard='xclip -sel clip'
 alias cpufreq='watch -n.1 "grep \"^[c]pu MHz\" /proc/cpuinfo"'
+alias cshell='docker exec -it `docker ps -al --format "{{.Names}}" | head -n1` /bin/bash -l'
 alias prune-local='git branch -vv | grep "origin/.*: gone]" | awk "{print $1}" | xargs git branch -d'
 alias get_pycharm_path='find /home/daniel/.local/share/JetBrains/Toolbox/apps -name "pycharm.sh" | sort -r | sed q'
 alias godoc_server='godoc -http=":6060"'
@@ -31,6 +32,21 @@ git() {
   fi
 }
 
+checkout_local() {
+  # USAGE: checkout_local <tab><tab>
+  git checkout $1
+}
+_checkout_local_loader()
+{
+  COMPREPLY=($(compgen -W "$(git branch | sed -r 's/^.{2}//' | tr '\n' ' ')" -- "${COMP_WORDS[1]}"))
+}
+complete -F _checkout_local_loader checkout_local
+
+
+kssh() {
+  command kitty +kitten ssh "$@"
+}
+
 # quicktar tgz faster.
 # Usage: quicktar output.tgz folder1 folder 2 ...
 function quicktar () {
@@ -46,18 +62,31 @@ function send_map () {
 }
 
 # ROS aliases
-alias con='rosrun swri_console swri_console &'
-alias viz='rosrun mapviz mapviz &'
+alias con='rosrun swri_console swri_console'
+# alias viz='rosrun mapviz mapviz _config:="$1"'
+function viz () {
+  CONFIG="/tmp/mapviz_config_path"
+  if [ ! -f $CONFIG ]
+  then
+    echo `realpath ${1}` > $CONFIG
+  fi
+
+  rosrun mapviz mapviz _config:="`cat $CONFIG`"
+}
+function rtopic () {
+  rostopic list | grep -e ${1} | xargs rostopic hz
+}
 alias rcore='systemctl --user restart roscore.service'
 alias rdepi='rosdep install . --from-paths -i --os=ubuntu:$(cat /etc/os-release | sed -En 's/UBUNTU_CODENAME=//p') -y -r'
 alias rmsg='rosmsg'
 alias rnode='rosnode'
 alias rsrv='rosservice'
-alias rtopic='rostopic'
 alias sim_time='rosparam set use_sim_time true'
 alias pull_workspace='wstool up -j$(nproc) --continue-on-error'
 alias chws='source workspace'
 alias purge_param="rosparam list | xargs -I % sh -c 'rosparam delete % -v'"
+alias catkin_distribute='catkin build -p$(distcc -j) -j$(distcc -j) --no-jobserver'
+alias submodule_checkout="git submodule foreach -q --recursive 'git checkout $(git config -f $toplevel/.gitmodules submodule.$name.branch || echo master)'"
 
 # CLion
 
@@ -70,7 +99,7 @@ alias get_clion_path='find /home/daniel/.local/share/JetBrains/Toolbox/apps -nam
 
 ros_clion () {
   JETBRAINS_APP=clion.sh
-  RUN_PATH=`find /home/daniel/.local/share/JetBrains/Toolbox/apps -name "$JETBRAINS_APP" | sort -r | sed q`
+  RUN_PATH=`find ${HOME}/.local/share/JetBrains/Toolbox/apps -name "$JETBRAINS_APP" | sort -r | sed q`
 
   #bash -i -c "${RUN_PATH}" %f
   nohup "${RUN_PATH}" &>/dev/null &
@@ -78,7 +107,7 @@ ros_clion () {
 
 ros_pycharm() {
   JETBRAINS_APP=pycharm.sh
-  RUN_PATH=`find /home/daniel/.local/share/JetBrains/Toolbox/apps -name "$JETBRAINS_APP" | sort -r | sed q`
+  RUN_PATH=`find ${HOME}/.local/share/JetBrains/Toolbox/apps -name "$JETBRAINS_APP" | sort -r | sed q`
 
   #bash -i -c "${RUN_PATH}" %f
   nohup "${RUN_PATH}" &>/dev/null &
@@ -104,6 +133,7 @@ function rosnetwork () {
   # attempt to resolve hostname (TODO)
 
   # figure out the ROS_MASTER_URI
+  echo $MASTER_IP
   if [[ $INTERFACE_IP != "" ]] && $(nc -z -w1 ${MASTER_IP} ${MASTER_PORT})
   then
     # set to rosmaster
@@ -216,7 +246,7 @@ EOM
       # create python symlinks
       PYTHON_SITE=${WORKSPACE_PATH}/lib/python2.7/dist-packages/
       echo $PYTHON_SITE > $(python2 -m site --user-site)/catkin.pth
-      echo $PYTHON_SITE > $(python3 -m site --user-site)/catkin.pth
+      echo $PYTHON_SITE > $(python3.8 -m site --user-site)/catkin.pth
     else  
       echo "Could not find ${WORKSPACE_PATH}/devel/setup.bash"
     fi    
@@ -311,13 +341,24 @@ function parse_git_branch() {
 function export_ps1 () {
   # export the PS1 variable, called from ~/.bashrc
   # USAGE export_ps1
-  export PS1="\$(color 3)\A \$(color 6 bold)\$(echo \$ROS_IP):\$(parse_cmake_path) \$(color 2 bold)\u \$(color 7)at \$(color 2 bold)\h\$(color 7 ) in \$(color 6 bold)\w \$(color 1)\$(parse_git_branch)\$(color 7 9)\n \\$ \[\$(tput sgr0)\]" 
+  export PS1="\$(color 3)\A \$(color 6 bold)\$(echo \$ROS_IP):\$(parse_cmake_path) \$(color 2 bold)\u \$(color 7)at \$(color 2 bold)\h\$(color 7 ) in \$(color 6 bold)\w \$(color 1)\$(parse_git_branch)\$(color 7)\n \\$ \[\$(tput sgr0)\]" 
 }
 
 alias play_mp3='vlc --intf dummy'
 
 function bringup_vcan () {
+  INTERFACE=${1:-"vcan0"}
   sudo modprobe vcan
-  sudo ip link add dev vcan0 type vcan && sudo ip link set up vcan0
+  sudo ip link add dev $INTERFACE type vcan && sudo ip link set up $INTERFACE
 }
 
+function bringup_vcan2 () {
+  # Ensure that the script runs with super user privileges.
+  [ "$UID" -eq 0 ] || exec sudo bash "$0" "$@"
+  # Load the kernel module
+  modprobe vcan
+  # Create the virtual CAN interface.
+  ip link add dev vcan0 type vcan
+  # Bring the virtual CAN interface online
+  ip link set up vcan0
+}
